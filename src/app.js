@@ -1,4 +1,4 @@
-import express from 'express'
+	import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 
@@ -18,6 +18,8 @@ app.use(express.static("public"))
 app.use(cookieParser())
 //import routes
 import healthCheckRouter from './routes/healthcheck.routes.js';
+import userRouter from './routes/user.routes.js'
 
 app.use('/api/v1/healthCheck',healthCheckRouter);
+app.use('/api/v1/users',userRouter);
 export {app};

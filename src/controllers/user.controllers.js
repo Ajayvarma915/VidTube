@@ -2,7 +2,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHander } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { uploadOnCloudinary,deleteFromCloudinary } from "../utils/cloudinary.js";
 
 const registerUser=asyncHander(async (req,res)=>{
     const {fullName,email,username,password}=req.body;
@@ -49,21 +49,33 @@ const registerUser=asyncHander(async (req,res)=>{
     }
 
 
-    const user=await User.create({
-        fullName,
-        avatar: avatar.url,
-        coverImage:coverImage.url,
-        email,
-        password,
-        username:username.toLowerCase()
-    })
+    try {
+        const user=await User.create({
+            fullName,
+            avatar: avatar.url,
+            coverImage:coverImage.url,
+            email,
+            password,
+            username:username.toLowerCase()
+        })
 
-    const findUser=await User.findById(user._id).select("-password -refreshToken");
-    if(!findUser){
-        throw new ApiError(500,"User creation failed!!!");
+        const findUser=await User.findById(user._id).select("-password -refreshToken");
+        if(!findUser){
+            throw new ApiError(500,"User creation failed!!!");
+        }
+
+        return res.status(201).json(new ApiResponse(200,user,"user created successfully"));
+    } catch (error) {
+        console.log("user creation failed")
+        if(avatar){
+            await deleteFromCloudinary(avatar.public_id)
+        }
+        if(coverImage){
+            await deleteFromCloudinary(coverImage.public_id)
+        }
+
+        throw new ApiError(500,"Registering a user failed and images were deleted");
     }
-
-    return res.status(201).json(new ApiResponse(200,findUser,"user created successfully"));
 })
 
 

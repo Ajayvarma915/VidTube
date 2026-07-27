@@ -4,6 +4,27 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary,deleteFromCloudinary } from "../utils/cloudinary.js";
 
+const generateAccessAndRefreshToken=async(userId)=>{
+    try {
+        const user=await User.findById(userId);
+        
+        if(!user){
+            throw new ApiError(404,"User not found with the userId: ",userId);
+        }
+
+        const accessToken=await user.generateAccessToken();
+        const refreshToken=await user.generateRefreshToken();
+
+        user.refreshToken=refreshToken;
+        await user.save({validateBeforeSave:false});
+
+        return {accessToken,refreshToken};
+    } catch (error) {
+        console.log("error generating access and refresh token.");
+        throw new ApiError(500,"error generating access and refresh tokens");
+    }
+}
+
 const registerUser=asyncHander(async (req,res)=>{
     const {fullName,email,username,password}=req.body;
 
@@ -16,7 +37,7 @@ const registerUser=asyncHander(async (req,res)=>{
         throw new ApiError(409,"User with email or username already exists")
     }
     
-    console.warn(req.files)
+    // console.warn(req.files)
     const avatarLocalPath=req.files?.avatar?.[0]?.path
     const coverLocalPath=req.files?.coverImage?.[0]?.path
     
@@ -78,5 +99,38 @@ const registerUser=asyncHander(async (req,res)=>{
     }
 })
 
+const loginUser=asyncHander(async (req,res)=>{
+    const {email,username,password}=req.body;
 
-export {registerUser}
+    if([email,password].some((field)=>field?.trim()==="")){
+        throw new ApiError(404,"All fields are required");
+    }
+
+    const user=User.findOne({
+        $or:[{email},{username}]
+    })
+
+    if(!user){
+        throw new ApiError(404,"User doesn't exists");
+    }
+
+    const isPasswordCorrect=await user.isPasswordCorrect(password);
+
+    if(!isPasswordCorrect) throw new ApiError(401,"Invalid Credentials");
+
+    const {accessToken,refreshToken}=generateAccessAndRefreshToken(user._id);
+
+    const loggedInUser=await User.findById(user._id).select("-password -refreshToken");
+
+    const options={
+        httpOnly:true,
+        secure:process.env.NODE_ENV==='production',
+    }
+
+    return res.status(200)
+    .cookie('accessToken',accessToken,options)
+    .cookie('refreshToken',refreshToken,options)
+    .json(new ApiResponse(200,loggedInUser,"User logged in successfully"))
+})
+
+export {registerUser,loginUser}

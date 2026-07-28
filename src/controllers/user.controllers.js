@@ -141,6 +141,7 @@ const logout=asyncHander(async (req,res)=>{
 })
 
 const refreshAccessToken=asyncHander(async (req,res)=>{
+    //assuming the user is sent a request to /refreshtoken route and he is passing refresh token from there
     const incomingRefreshToken=req.cookies.refreshToken || req.body.refreshToken;
 
     if(!incomingRefreshToken){
@@ -172,7 +173,7 @@ const refreshAccessToken=asyncHander(async (req,res)=>{
         .json(new ApiResponse(200,{accessToken,refreshToken:newRefreshToken},"access token refreshed successfully"));
 
     } catch (error) {
-        
+        throw new ApiError(500,"refreshing access token is failed!!!");
     }
 })
 export {registerUser,loginUser,refreshAccessToken}

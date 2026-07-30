@@ -189,4 +189,59 @@ const refreshAccessToken=asyncHander(async (req,res)=>{
         throw new ApiError(500,"refreshing access token is failed!!!")
     }
 })
+
+const changeCurrentPassword=asyncHander(async (req,res)=>{
+    const {oldPassword,newPassword}=req.body;
+
+    const user=await User.findById(req.user?._id);
+
+    const isPasswordValid=await user.isPasswordCorrect(oldPassword);
+
+    if(!isPasswordValid){
+        throw new ApiError(401,"password is incorrect");
+    }
+
+    user.password=newPassword;
+
+    await user.save({validateBeforeSave:false});
+
+    return res.status(200).json(new ApiResponse(200,{},"Password changed successfully"));
+})
+
+const getCurrentUser=asyncHander(async (req,res)=>{
+    return res.status(200).json(new ApiResponse(200,req.user,"Current user"));
+})
+
+const updateAccountDetails=asyncHander(async (req,res)=>{
+    const {fullName,email}=req.body;
+
+    if(!fullName){
+        throw new ApiError(400,"Fullname is required");
+    }
+
+    if(!email){
+        throw new ApiError(400,"email is required");
+    }
+
+    const user=User.findByIdAndUpdate(req.user?._id,
+        {
+            fullName:fullName,
+            email:email
+        },
+        {
+            new:true
+        }
+    ).select("-password -refreshToken");
+
+    return res.status(200).json(new ApiResponse(200,user,"Account details updated successfully"))
+})
+
+const updateUserAvatar=asyncHander(async (req,res)=>{
+
+})
+
+const updateUserCoverImage=asyncHander(async (req,res)=>{
+
+})
+
 export {registerUser,loginUser,refreshAccessToken,logoutUser}

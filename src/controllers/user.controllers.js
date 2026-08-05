@@ -4,6 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary,deleteFromCloudinary } from "../utils/cloudinary.js";
 import jwt from 'jsonwebtoken'
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshToken=async(userId)=>{
     try {
@@ -324,14 +325,54 @@ const getUserChannelProfile=asyncHander(async (req,res)=>{
                 },
                 channelsSubscribedTo:{
                     $size:"$subscribedTo"
+                },
+                isSubscribed:{
+                    $cond: {
+                        if:{$in:[req.user?._id,"$subscribers.subscriber"]},
+                        then:true,
+                        else:false
+                    }
                 }
             }
         },
+        {
+            //project only the necessary data
+            $project:{
+                fullName:1,
+                username:1,
+                avatar:1,
+                subscribersCount:1,
+                channelsSubscribedTo:1,
+                isSubscribed:1,
+                coverImage:1, 
+                email:1
+            }
+        }
     ])
+
+    if(!channel?.length){
+        throw new ApiError(404,"Channel not found")
+    }
+
+    return res.status(200).json(new ApiResponse(200,channel[0],"Channel profile fetched successfully"))
 })
 
 const getWatchHistory=asyncHander(async (req,res)=>{
-
+    const user=await User.aggregate([
+        {
+            $match:{
+                _id:new mongoose.Types.ObjectId(req.user?._id)
+            }
+        },
+        {
+            $lookup:{
+                from:'videos',
+                localField:'watchHistory',
+                foreignField:'_id',
+                as:'watchHistory'
+            }
+        }
+    ])
 })
 
 export {registerUser,loginUser,refreshAccessToken,logoutUser,changeCurrentPassword,getCurrentUser,updateAccountDetails,updateUserAvatar,updateUserCoverImage}

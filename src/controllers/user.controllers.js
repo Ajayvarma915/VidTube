@@ -369,10 +369,38 @@ const getWatchHistory=asyncHander(async (req,res)=>{
                 from:'videos',
                 localField:'watchHistory',
                 foreignField:'_id',
-                as:'watchHistory'
+                as:'watchHistory',
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:'users',
+                            localField:'owner',
+                            foreignField:'_id',
+                            as:'owner',
+                            pipeline:[
+                                {
+                                    $project:{
+                                        fullName:1,
+                                        username:1,
+                                        avatar:1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields:{
+                            owner:{
+                                $first:"$owner"
+                            }
+                        }
+                    }
+                ]
             }
         }
     ])
+
+    return res.status(200).json(new ApiResponse(200,user[0]?.getWatchHistory,"watch history fetched successfully"))
 })
 
-export {registerUser,loginUser,refreshAccessToken,logoutUser,changeCurrentPassword,getCurrentUser,updateAccountDetails,updateUserAvatar,updateUserCoverImage}
+export {registerUser,loginUser,refreshAccessToken,logoutUser,changeCurrentPassword,getCurrentUser,updateAccountDetails,updateUserAvatar,updateUserCoverImage,getUserChannelProfile,getWatchHistory}

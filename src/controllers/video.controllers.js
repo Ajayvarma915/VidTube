@@ -3,7 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { asyncHander } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
 import { User } from "../models/user.models.js";
-import mongoose from "mongoose.js";
+import mongoose from "mongoose";
 
 const getVideoInfo=asyncHander(async (req,res)=>{
     const {videoId}=req.body || req.params;
@@ -54,39 +54,8 @@ const getVideoOwnerInfo=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,video[0],"Video owner info fetched successfully"))
 })
 
-const getAllVideo=asyncHander(async (req,res)=>{
-    const videos=await User.aggregate([
-        {
-            $match:'watchHistory'
-        },
-        {
-            $lookup:{
-                from:'videos',
-                localField:'watchHistory',
-                foreignField:'_id',
-                as:'allVideos'
-            }
-        },
-        {
-            $unwind:'$allVideos'
-        },
-        {
-            $project:{
-                $all:1
-            }
-        },
-        {
-            $count:{
-                totalVideos:'$allVideos'
-            }
-        }
-    ])
-
-    if(!videos){
-        throw new ApiError(404,"User not found");
-    }
-
-    return res.status(200).json(new ApiResponse(200,videos,"all videos fetched successfully"));
+const getAllVideos=asyncHander(async (req,res)=>{
+    
 })
 
 const updateVideo=asyncHander(async (req,res)=>{

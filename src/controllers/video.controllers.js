@@ -55,7 +55,68 @@ const getVideoOwnerInfo=asyncHander(async (req,res)=>{
 })
 
 const getAllVideos=asyncHander(async (req,res)=>{
-    
+    const {page=1,limit=10,query,sortBy='createdAt',sortType='desc',userId}=req.query;
+
+    const matchConditions={
+        isPublished:true
+    }
+
+    if(userId){
+        matchConditions.owner=new mongoose.Types.ObjectId(userId);
+    }
+
+    if(query){
+        matchConditions.$or=[
+            {title:{ $regex: query, $options:1}},
+            {description:{$regex: query, $options:1}}
+        ];
+    }
+
+    const pipeline=[
+        {
+            $match:matchConditions
+        },
+        {
+            $lookup:{
+                from:'users',
+                localField:'owner',
+                foreignField:'_id',
+                as:'ownerDetails',
+                pipeline:[
+                    {
+                        $project:{
+                            fullName:1,
+                            username:1,
+                            avatar:1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $addFields:{
+                ownerDetails: {$first:'$ownerDetails'}
+            }
+        },
+        {
+            $sort:{
+                [sortBy]:sortType==='desc'?-1:1
+            }
+        }
+    ];
+
+    const options= {
+        page: parseInt(page,10),
+        limit: parseInt(limit,10),
+        customLabels:{
+            totalDocs: 'totalVideos',
+            docs: 'videos'
+        }
+    }
+
+    const paginatedVideos= await Video.aggregatePaginate(Video.aggregate(pipeline),options);
+
+    return res.status(200).json(new ApiResponse(200,paginatedVideos,"Videos fetched successfully"));
 })
 
 const updateVideo=asyncHander(async (req,res)=>{

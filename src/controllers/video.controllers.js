@@ -4,6 +4,7 @@ import { asyncHander } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
 import { User } from "../models/user.models.js";
 import mongoose from "mongoose";
+import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const getVideoInfo=asyncHander(async (req,res)=>{
     const {videoId}=req.body || req.params;
@@ -119,12 +120,105 @@ const getAllVideos=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,paginatedVideos,"Videos fetched successfully"));
 })
 
-const updateVideo=asyncHander(async (req,res)=>{
+const publishVideo=asyncHander(async (req,res)=>{
+    const {title,description}= req.body;
 
+    if([title,description].some((field)=>field.trim()==="")){
+        throw new ApiError(400,"Title and Description are required!!!");
+    }
+
+    const videoLocalPath=req.files?.videoFile?.[0]?.path;
+    const thumbnailUpload=req.files?.thumbnail?.[0]?.path;
+
+    if(!videoLocalPath){
+        throw new ApiError(400,"Video file is required!!!");
+    }
+
+    if(!thumbnailUpload){
+        throw new ApiError(400,"Thumbnail file is required!!!");
+    }
+
+    const videoUpload=await uploadOnCloudinary(videoLocalPath);
+    const thumbnailUpload=await uploadOnCloudinary(thumbnailUpload);
+
+    if(!videoUpload?.url){
+        throw new ApiError(500,"Error while uploading video to cloudinary");
+    }
+    if(!thumbnailUpload?.url){
+        throw new ApiError(500,"Error while uploading video to cloudinary");
+    }
+
+    const video=await Video.create({
+        title,
+        description,
+        videoFile: videoUpload.url,
+        thumbnail: thumbnailUpload.url,
+        duration: videoUpload.duration,
+        owner: req.user._id,
+        isPublished:true
+    });
+
+    const uploadedVideo=await Video.findById(video._id);
+
+    if(!uploadedVideo){
+        throw new ApiError(500,"Something went wrong while saving the video to the database");
+    }
+
+    return res.status(201).json(new ApiResponse(200,uploadedVideo,"video published successfully"));
+})
+ 
+const updateVideo=asyncHander(async (req,res)=>{
+    const {videoId}=req.params;
+    const {title,description}=req.body;
+    const thumbnailLocalPath=req.file?.path;
+
+    if(!title && !description && !thumbnailLocalPath){
+        throw new ApiError(400,"Please provide atleast one field to update");
+    }
+
+    const video= await Video.findById(videoId);
+
+    if(!video){
+        throw new ApiError(404,"Video not found");
+    }
+
+    if(video.owner.toString()!==req.user._id.toString()){
+        throw new ApiError(403,"You do not have permission to update this video");
+    }
+
+    let thumbnailUrl=video.thumbnail;
+
+    if(thumbnailLocalPath){
+        const thumbnailUpload=await uploadOnCloudinary(thumbnailLocalPath);
+        if(!thumbnailUpload?.url){
+            throw new ApiError(500,"Error while uploading new thumbnail");
+        }
+        thumbnailUrl=thumbnailUpload.url;
+
+        const oldThumbnailPublicId=video.thumbnail.split('/').pop().split('.')[0];
+
+        await deleteFromCloudinary(oldThumbnailPublicId);
+
+        const updatedVideo=await Video.findByIdAndUpdate(
+            videoId,
+            {
+                $set:{
+                    title: title || video.title,
+                    description: description || video.description,
+                    thumbnail: thumbnailUrl
+                }
+            },
+            {
+                new:true
+            }
+        );
+
+        return res.status(200).json(new ApiResponse(200,updatedVideo,"Video updated successfully"));
+    }
 })
 
 const deleteVideo=asyncHander(async (req,res)=>{
-
+    
 })
 
 export {getVideoInfo,getVideoOwnerInfo};

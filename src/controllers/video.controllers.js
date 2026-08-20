@@ -128,18 +128,18 @@ const publishVideo=asyncHander(async (req,res)=>{
     }
 
     const videoLocalPath=req.files?.videoFile?.[0]?.path;
-    const thumbnailUpload=req.files?.thumbnail?.[0]?.path;
+    const thumbnailLocalUpload=req.files?.thumbnail?.[0]?.path;
 
     if(!videoLocalPath){
         throw new ApiError(400,"Video file is required!!!");
     }
 
-    if(!thumbnailUpload){
+    if(!thumbnailLocalUpload){
         throw new ApiError(400,"Thumbnail file is required!!!");
     }
 
     const videoUpload=await uploadOnCloudinary(videoLocalPath);
-    const thumbnailUpload=await uploadOnCloudinary(thumbnailUpload);
+    const thumbnailUpload=await uploadOnCloudinary(thumbnailLocalUpload);
 
     if(!videoUpload?.url){
         throw new ApiError(500,"Error while uploading video to cloudinary");
@@ -198,27 +198,46 @@ const updateVideo=asyncHander(async (req,res)=>{
         const oldThumbnailPublicId=video.thumbnail.split('/').pop().split('.')[0];
 
         await deleteFromCloudinary(oldThumbnailPublicId);
-
-        const updatedVideo=await Video.findByIdAndUpdate(
-            videoId,
-            {
-                $set:{
-                    title: title || video.title,
-                    description: description || video.description,
-                    thumbnail: thumbnailUrl
-                }
-            },
-            {
-                new:true
-            }
-        );
-
-        return res.status(200).json(new ApiResponse(200,updatedVideo,"Video updated successfully"));
     }
+    const updatedVideo=await Video.findByIdAndUpdate(
+        videoId,
+        {
+            $set:{
+                title: title || video.title,
+                description: description || video.description,
+                thumbnail: thumbnailUrl
+            }
+        },
+        {
+            new:true
+        }
+    );
+
+    return res.status(200).json(new ApiResponse(200,updatedVideo,"Video updated successfully"));
 })
 
 const deleteVideo=asyncHander(async (req,res)=>{
-    
+    const {videoId}=req.params;
+
+    const video=await Video.findById(videoId);
+
+    if(!video){
+        throw new ApiError(404,"Video not found");
+    }
+
+    if(video.owner.toString()!==req.user?._id.toString()){
+        throw new ApiError(403,"You do not have permission to delete this video");
+    }
+
+    const videoPublicId=video.videoFile.split('/').pop().split('.')[0]
+    const thumbnailPublicId=video.thumbnail.split('/').pop().split('.')[0]
+
+    await deleteFromCloudinary(videoPublicId);
+    await deleteFromCloudinary(thumbnailPublicId);
+
+    await Video.findByIdAndDelete(videoId);
+
+    return res.status(200).json(new ApiResponse(200,{},"Video deleted successfully"));
 })
 
-export {getVideoInfo,getVideoOwnerInfo};
+export {getVideoInfo,getVideoOwnerInfo,getAllVideos,publishVideo,updateVideo,deleteVideo};

@@ -78,3 +78,28 @@ const toggleTweetLike=asyncHander(async(req,res)=>{
 
     return res.status(200).json(new ApiResponse(200,{isLiked:true},"tweet liked successfully"));
 })
+
+const getAllLikedVideos=asyncHander(async(req,res)=>{
+    const likedVideos=await Like.aggregate([
+        {
+            $match:{
+                likedBy:new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup:{
+                from:'videos',
+                localField:'video',
+                foreignField:'_id',
+                as:'likedVideo',
+                pipeline:[
+                    {
+                        $lookup:{
+                            
+                        }
+                    }
+                ]
+            }
+        }
+    ])
+})

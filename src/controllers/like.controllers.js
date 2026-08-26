@@ -95,7 +95,10 @@ const getAllLikedVideos=asyncHander(async(req,res)=>{
                 pipeline:[
                     {
                         $lookup:{
-                            
+                            from:'users',
+                            localField:'owner',
+                            foreignField:'_id',
+                            as:'LikedVideosByUser'
                         }
                     }
                 ]

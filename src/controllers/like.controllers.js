@@ -83,7 +83,8 @@ const getAllLikedVideos=asyncHander(async(req,res)=>{
     const likedVideos=await Like.aggregate([
         {
             $match:{
-                likedBy:new mongoose.Types.ObjectId(req.user._id)
+                likedBy:new mongoose.Types.ObjectId(req.user._id),
+                video:{$exists:true,$ne:null}
             }
         },
         {
@@ -98,11 +99,34 @@ const getAllLikedVideos=asyncHander(async(req,res)=>{
                             from:'users',
                             localField:'owner',
                             foreignField:'_id',
-                            as:'LikedVideosByUser'
+                            as:'owner',
+                            pipeline:[
+                                {
+                                    $project:{
+                                        username:1,
+                                        avatar:1,
+                                        fullName:1
+                                    }
+                                }
+                            ]
                         }
+                    },
+                    {
+                        $unwind:"$owner"
                     }
                 ]
             }
+        },
+        {
+            $project:{
+                _id:0,
+                likedVideo:1
+            }
         }
-    ])
+    ]);
+
+    return res.status(200).json(new ApiResponse(200,likedVideos,"get all liked videos fetched successfully"));
 })
+
+
+export {toggleCommentLike,toggleTweetLike,toggleVideoLike,getAllLikedVideos};

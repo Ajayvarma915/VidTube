@@ -12,8 +12,12 @@ const commentSchema=new Schema(
             ref:'Video'
         },
         owner:{
-            types:Schema.Types.ObjectId,
+            type:Schema.Types.ObjectId,
             ref:'User'
+        },
+        tweet:{
+            type:Schema.Types.ObjectId,
+            ref:'Tweet'
         }
     },
     {
@@ -23,4 +27,4 @@ const commentSchema=new Schema(
 
 commentSchema.plugin(mongooseAggregatePaginate)
 
-export const commentSchema=mongoose.model('Comment',commentSchema);
+export const Comment=mongoose.model('Comment',commentSchema);

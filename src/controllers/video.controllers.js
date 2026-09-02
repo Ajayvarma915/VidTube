@@ -1,12 +1,12 @@
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { asyncHander } from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { Video } from "../models/video.models.js";
 import { User } from "../models/user.models.js";
 import mongoose from "mongoose";
 import { deleteFromCloudinary, uploadOnCloudinary } from "../utils/cloudinary.js";
 
-const getVideoInfo=asyncHander(async (req,res)=>{
+const getVideoInfo=asyncHandler(async (req,res)=>{
     const {videoId}=req.body || req.params;
 
     const video=await Video.findById(videoId);
@@ -18,7 +18,7 @@ const getVideoInfo=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,video,"video info fetched successfully"));
 })
 
-const getVideoOwnerInfo=asyncHander(async (req,res)=>{
+const getVideoOwnerInfo=asyncHandler(async (req,res)=>{
     const {videoId}=req.body || req.params;
 
     const video=await Video.aggregate([
@@ -55,7 +55,7 @@ const getVideoOwnerInfo=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,video[0],"Video owner info fetched successfully"))
 })
 
-const getAllVideos=asyncHander(async (req,res)=>{
+const getAllVideos=asyncHandler(async (req,res)=>{
     const {page=1,limit=10,query,sortBy='createdAt',sortType='desc',userId}=req.query;
 
     const matchConditions={
@@ -120,7 +120,7 @@ const getAllVideos=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,paginatedVideos,"Videos fetched successfully"));
 })
 
-const publishVideo=asyncHander(async (req,res)=>{
+const publishVideo=asyncHandler(async (req,res)=>{
     const {title,description}= req.body;
 
     if([title,description].some((field)=>field.trim()==="")){
@@ -167,7 +167,7 @@ const publishVideo=asyncHander(async (req,res)=>{
     return res.status(201).json(new ApiResponse(200,uploadedVideo,"video published successfully"));
 })
  
-const updateVideo=asyncHander(async (req,res)=>{
+const updateVideo=asyncHandler(async (req,res)=>{
     const {videoId}=req.params;
     const {title,description}=req.body;
     const thumbnailLocalPath=req.file?.path;
@@ -216,7 +216,7 @@ const updateVideo=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,updatedVideo,"Video updated successfully"));
 })
 
-const deleteVideo=asyncHander(async (req,res)=>{
+const deleteVideo=asyncHandler(async (req,res)=>{
     const {videoId}=req.params;
 
     const video=await Video.findById(videoId);

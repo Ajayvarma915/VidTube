@@ -1,10 +1,10 @@
 import { Like } from "../models/like.models";
 import { ApiResponse } from "../utils/ApiResponse";
-import { asyncHander } from "../utils/asyncHandler";
+import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import mongoose,{isValidObjectId} from "mongoose";
 
-const toggleVideoLike=asyncHander(async(req,res)=>{
+const toggleVideoLike=asyncHandler(async(req,res)=>{
     const {videoId}=req.params;
 
     if(!isValidObjectId(videoId)){
@@ -29,7 +29,7 @@ const toggleVideoLike=asyncHander(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,{isLiked:true},"video liked successfully"));
 })
 
-const toggleCommentLike=asyncHander(async(req,res)=>{
+const toggleCommentLike=asyncHandler(async(req,res)=>{
     const {commentId}=req.params;
 
     if(!isValidObjectId(commentId)){
@@ -54,7 +54,7 @@ const toggleCommentLike=asyncHander(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,{isLiked:true},"comment liked successfully"));
 })
 
-const toggleTweetLike=asyncHander(async(req,res)=>{
+const toggleTweetLike=asyncHandler(async(req,res)=>{
     const {tweetId}=req.params;
 
     if(!isValidObjectId(tweetId)){
@@ -79,7 +79,7 @@ const toggleTweetLike=asyncHander(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,{isLiked:true},"tweet liked successfully"));
 })
 
-const getAllLikedVideos=asyncHander(async(req,res)=>{
+const getAllLikedVideos=asyncHandler(async(req,res)=>{
     const likedVideos=await Like.aggregate([
         {
             $match:{

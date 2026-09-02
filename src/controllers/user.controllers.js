@@ -1,5 +1,5 @@
 import { ApiResponse } from "../utils/ApiResponse.js";
-import { asyncHander } from "../utils/asyncHandler.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.models.js";
 import { uploadOnCloudinary,deleteFromCloudinary } from "../utils/cloudinary.js";
@@ -27,7 +27,7 @@ const generateAccessAndRefreshToken=async(userId)=>{
     }
 }
 
-const registerUser=asyncHander(async (req,res)=>{
+const registerUser=asyncHandler(async (req,res)=>{
     const {fullName,email,username,password}=req.body;
 
     if([fullName,email,username,password].some((field)=>field?.trim()==="")){
@@ -101,7 +101,7 @@ const registerUser=asyncHander(async (req,res)=>{
     }
 })
 
-const loginUser=asyncHander(async (req,res)=>{
+const loginUser=asyncHandler(async (req,res)=>{
     const {email,username,password}=req.body;
 
     if([email,password].some((field)=>field?.trim()==="")){
@@ -135,7 +135,7 @@ const loginUser=asyncHander(async (req,res)=>{
     .json(new ApiResponse(200,loggedInUser,"User logged in successfully"))
 })
 
-const logoutUser=asyncHander(async (req,res)=>{
+const logoutUser=asyncHandler(async (req,res)=>{
     user=await User.findByIdAndUpdate(
         req.user._id,
         {
@@ -155,7 +155,7 @@ const logoutUser=asyncHander(async (req,res)=>{
     .json(new ApiResponse(200,{},"User logged out successfully"))
 })
 
-const refreshAccessToken=asyncHander(async (req,res)=>{
+const refreshAccessToken=asyncHandler(async (req,res)=>{
     const incomingRefreshToken=req.cookies.refreshToken || req.body.refreshToken;
 
     if(!incomingRefreshToken){
@@ -191,7 +191,7 @@ const refreshAccessToken=asyncHander(async (req,res)=>{
     }
 })
 
-const changeCurrentPassword=asyncHander(async (req,res)=>{
+const changeCurrentPassword=asyncHandler(async (req,res)=>{
     const {oldPassword,newPassword}=req.body;
 
     const user=await User.findById(req.user?._id);
@@ -209,11 +209,11 @@ const changeCurrentPassword=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,{},"Password changed successfully"));
 })
 
-const getCurrentUser=asyncHander(async (req,res)=>{
+const getCurrentUser=asyncHandler(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,req.user,"Current user"));
 })
 
-const updateAccountDetails=asyncHander(async (req,res)=>{
+const updateAccountDetails=asyncHandler(async (req,res)=>{
     const {fullName,email}=req.body;
 
     if(!fullName){
@@ -237,7 +237,7 @@ const updateAccountDetails=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,user,"Account details updated successfully"))
 })
 
-const updateUserAvatar=asyncHander(async (req,res)=>{
+const updateUserAvatar=asyncHandler(async (req,res)=>{
     const avatarLocalPath=req.file?.path;
 
     if(!avatarLocalPath){
@@ -263,7 +263,7 @@ const updateUserAvatar=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,user,"Avatar updated successfully"))
 })
 
-const updateUserCoverImage=asyncHander(async (req,res)=>{
+const updateUserCoverImage=asyncHandler(async (req,res)=>{
     const coverImageLocalPath=req.file?.path;
 
     if(!coverImageLocalPath){
@@ -289,7 +289,7 @@ const updateUserCoverImage=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,user,"coverImage updated successfully"))
 })
 
-const getUserChannelProfile=asyncHander(async (req,res)=>{
+const getUserChannelProfile=asyncHandler(async (req,res)=>{
     const {username}=req.params;
 
     if(!username?.trim()){
@@ -357,7 +357,7 @@ const getUserChannelProfile=asyncHander(async (req,res)=>{
     return res.status(200).json(new ApiResponse(200,channel[0],"Channel profile fetched successfully"))
 })
 
-const getWatchHistory=asyncHander(async (req,res)=>{
+const getWatchHistory=asyncHandler(async (req,res)=>{
     const user=await User.aggregate([
         {
             $match:{

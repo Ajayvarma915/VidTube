@@ -61,16 +61,58 @@ const updateVideoComment=asyncHandler(async (req,res)=>{
         throw new ApiError(403,"you do not have permission to edit this comment");
     }
 
-    const updatedComment=await Comment.findByIdAndUpdate({
-        
-    })
+    const updatedComment=await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set:{
+                content:content.trim()
+            }
+        },
+        {
+            new:true
+        }
+    )
+
+    return res.status(200).json(new ApiResponse(200,updatedComment,"video comment updated successfully"));
 })
 
 const updatetweetComment=asyncHandler(async (req,res)=>{
+    const {commentId}=req.params;
+    const {content}=req.body;
 
+    if(!content || content.trim()===""){
+        throw new ApiError(404,"content is required");
+    }
+
+    const comment=await Comment.findById(commentId);
+
+    if(!comment){
+        throw new ApiError(404,"Invalid comment Id");
+    }
+
+    if(comment.owner.toString()!==req.user._id.toString()){
+        throw new ApiError(403,"You do not have permission to edit this comment");
+    }
+
+    const updatedComment=await Comment.findByIdAndUpdate(
+        commentId,
+        {
+            $set:{
+                comment:comment.trim()
+            }
+        },
+        {
+            new:true
+        }
+    )
+
+    return res.status(200).json(new ApiResponse(200,updatedComment,"tweet comment updated successfully"));
 })
 
-const deleteComment=asyncHandler(async (req,res)=>{
+const deleteVideoComment=asyncHandler(async (req,res)=>{
+
+})
+const deleteTweetComment=asyncHandler(async (req,res)=>{
 
 })
 

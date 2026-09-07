@@ -2,6 +2,7 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse";
 import { asyncHandler } from "../utils/asyncHandler";
 import { Comment } from "../models/comment.models";
+import mongoose,{isValidObjectId} from "mongoose";
 
 const addVideoComment=asyncHandler(async (req,res)=>{
     const {videoId}=req.params;
@@ -95,12 +96,103 @@ const deleteComment=asyncHandler(async (req,res)=>{
 })
 
 const getVideoComments=asyncHandler(async (req,res)=>{
+    const {videoId}=req.params;
+    const {page=1,limit=10}=req.query;
 
+    if(!isValidObjectId(videoId)){
+        throw new ApiError(400,"Invalid video Id");
+    }
+
+    const allVideoComments=await Comment.aggregate([
+        {
+            $match:{
+                video:new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup:{
+                from:'users',
+                localField:'owner',
+                foreignField:'_id',
+                as:'owner',
+                pipeline:[
+                    {
+                        $project:{
+                            username:1,
+                            fullName:1,
+                            avatar:1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind:"$owner"
+        },
+        {
+            $sort:{
+                createdAt:-1
+            }
+        }
+    ]);
+
+
+    const options={
+        page:parseInt(page,10),
+        limit:parseInt(page,10)
+    }
+
+    const comments=await Comment.aggregatePaginate(allVideoComments,options);
+    return res.status(200).json(new ApiResponse(200,comments,"video commments fetched successfully"));
 })
 
 const getTweetComments=asyncHandler(async (req,res)=>{
+    const {tweetId}=req.params;
 
+    const {page=1,limit=10}=req.query;
+
+    const alltweetedComments=await Comment.aggregate([
+        {
+            $match:{
+                tweet:new mongoose.Types.ObjectId(tweetId)
+            }
+        },
+        {
+            $lookup:{
+                from:'users',
+                localField:'owner',
+                foreignField:'_id',
+                as:'owner',
+                pipeline:[
+                    {
+                        $project:{
+                            username:1,
+                            fullName:1,
+                            avatar:1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind:"$owner"
+        },
+        {
+            $sort:{
+                createdAt:-1
+            }
+        }
+    ]);
+
+    const options={
+        page:parseInt(page,10),
+        limit:parseInt(limit,10)
+    };
+
+    const comments=await Comment.aggregatePaginate(alltweetedComments,options);
+
+    return res.status(200).json(new ApiResponse(200,comments,"tweet comments fetched successfully"));
 })
 
 
-export {addTweetComment,addVideoComment,updateVideoComment,updatetweetComment,deleteComment,getVideoComments,getTweetComments}
+export {addTweetComment,addVideoComment,updateVideoComment,deleteComment,getVideoComments,getTweetComments}

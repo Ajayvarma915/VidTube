@@ -68,7 +68,7 @@ const deleteTweet=asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,{},"Tweet deleted successfully"));
 })
 
-const getUserTweet=asyncHandler(async(req,res)=>{
+const getUserTweets=asyncHandler(async(req,res)=>{
     const {userId}=req.params;
 
     if(!isValidObjectId(userId)){
@@ -111,4 +111,4 @@ const getUserTweet=asyncHandler(async(req,res)=>{
     return res.status(200).json(new ApiResponse(200,gellAllUserTweets,"User Tweets fetched successfully"));
 })
 
-export {createTweet,updateTweet,deleteTweet,getUserTweet}
+export {createTweet,updateTweet,deleteTweet,getUserTweets}

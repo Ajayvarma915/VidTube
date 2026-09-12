@@ -92,7 +92,35 @@ const deletePlaylist=asyncHandler(async (req,res)=>{
 })
 
 const removeVideoFromPlaylist=asyncHandler(async (req,res)=>{
+    const {playlistId,videoId}=req.params;
 
+    if(!isValidObjectId(playlistId) || !isValidObjectId(videoId)){
+        throw new ApiError(400,"Invalid playlist or video Id");
+    }
+
+    const playlist=await Playlist.findById(playlistId);
+
+    if(!playlist){
+        throw new ApiError(404,"playlist not found");
+    }
+
+    if(playlist.owner.toString()!==req.user._id.toString()){
+        throw new ApiError(403,"you don't have permission to modify this playlist");
+    }
+
+    const updatedPlaylist=await Playlist.findByIdAndDelete(
+        playlistId,
+        {
+            $pull:{
+                videos:videoId
+            }
+        },
+        {
+            new:true
+        }
+    )
+
+    return res.status(200).json(new ApiResponse(200,updatedPlaylist,"video removed from playlist successfully"));   
 })
 
 const getUserPlaylists=asyncHandler(async (req,res)=>{
@@ -100,7 +128,35 @@ const getUserPlaylists=asyncHandler(async (req,res)=>{
 })
 
 const addVideoToPlaylist=asyncHandler(async (req,res)=>{
+    const {playlistId,videoId}=req.params;
 
+    if(!isValidObjectId(playlistId) || !isValidObjectId(videoId)){
+        throw new ApiError(400,"Invalid playlist or video ID");
+    }
+
+    const playlist=await Playlist.findById(playlistId);
+
+    if(!playlist){
+        throw new ApiError(404,"Playlist not found");
+    }
+
+    if(playlist.owner.toString()!==req.user._id.toString()){
+        throw new ApiError(403,"you don't have permission to edit the playlist");
+    }
+
+    const updatedPlaylist=await Playlist.findByIdAndUpdate(
+        playlistId,
+        {
+            $set:{
+                videos:videoId  
+            }
+        },
+        {
+            new:true
+        }
+    );
+
+    return res.status(200).json(new ApiResponse(200,updatedPlaylist,'video added to playlist successfully'));
 })
 
 const getPlaylistById=asyncHandler(async (req,res)=>{

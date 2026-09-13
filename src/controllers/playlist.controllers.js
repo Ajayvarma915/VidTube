@@ -124,7 +124,53 @@ const removeVideoFromPlaylist=asyncHandler(async (req,res)=>{
 })
 
 const getUserPlaylists=asyncHandler(async (req,res)=>{
+    const {userId}=req.params;
 
+    if(!isValidObjectId(userId)){
+        throw new ApiError(404,"Invalid user ID");
+    }
+
+    const playlists=await Playlist.aggregate([
+        {
+            $match:{
+                owner:new mongoose.Types.ObjectId(userId)
+            }
+        },
+        {
+            $lookup:{
+                from:'videos',
+                localField:'videos',
+                foreignField:'_id',
+                as:'videos'
+            }
+        },
+        {
+            $addFields:{
+                totalVideos:{
+                    $size:"$videos"
+                },
+                totalViews:{
+                    $sum:"$videos.views"
+                }
+            }
+        },
+        {
+            $project:{
+                name:1,
+                description:1,
+                totalVideos:1,
+                totalViews:1,
+                updatedAt:1
+            }
+        },
+        {
+            $sort:{
+                updatedAt:-1
+            }
+        }
+    ]);
+
+    return res.status(200).json(new ApiResponse(200,playlists,"User playlists fetched successfully"));
 })
 
 const addVideoToPlaylist=asyncHandler(async (req,res)=>{
@@ -160,7 +206,75 @@ const addVideoToPlaylist=asyncHandler(async (req,res)=>{
 })
 
 const getPlaylistById=asyncHandler(async (req,res)=>{
+    const {playlistId}=req.params;
 
+    if(!isValidObjectId(playlistId)){
+        throw new ApiError(400,"Invalid Playlist ID");
+    }
+
+    const playlist=await Playlist.aggregate([
+        {
+            $match:{
+                _id:new mongoose.Types.ObjectId(playlistId)
+            }
+        },
+        {
+            $lookup:{
+                from:'videos',
+                localField:'videos',
+                foreignField:'_id',
+                as:'videos',
+                pipeline:[
+                    {
+                        $lookup:{
+                            from:'users',
+                            localField:'owner',
+                            foreignField:'_id',
+                            as:'owner',
+                            pipeline:[
+                                {
+                                    $project:{
+                                        username:1,
+                                        fullName:1,
+                                        avatar:1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $unwind:'$owner'
+                    }
+                ]
+            }
+        },
+        {
+            $lookup:{
+                from:'users',
+                localField:'owner',
+                foreignField:'_id',
+                as:'ownerDetails',
+                pipeline:[
+                    {
+                        $project:{
+                            username:1,
+                            fullName:1,
+                            avatar:1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $unwind:'$ownerDetails'
+        }
+    ]);
+
+    if(!playlist?.length){
+        throw new ApiError(404,"Playlist not found");
+    }
+
+    return res.status(200).json(new ApiResponse(200,playlist[0],"Playlist fetched successfully"));
 })
 
 export {createPlaylist,updatePlaylist,deletePlaylist,removeVideoFromPlaylist,getPlaylistById,addVideoToPlaylist,getUserPlaylists};
